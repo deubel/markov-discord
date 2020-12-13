@@ -29,7 +29,7 @@ internal object Discov {
 //            val mentionedMarkov = markovs.getOrPut(mention.id) { fetchMarkov(channel, msg, mention.id) }
 
             if (msg.content.startsWith("!markov")) {
-                val mention = msg.userMentions.single().block() ?: return@subscribe
+                val mention = msg.userMentions.singleOrEmpty().block() ?: return@subscribe
                 val mentionedMarkov = markovs[mention.id] ?: return@subscribe
                 channel.createMessage(mentionedMarkov.generate()).block()
             }
