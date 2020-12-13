@@ -40,7 +40,7 @@ internal class Markov {
         var word = chain["_start"]!!.random()
         phrase += word
 
-        while (word.last() != '.') {
+        while (word.isNotBlank() && word.last() != '.') {
             word = chain[word]!!.random()
             phrase += word
         }
