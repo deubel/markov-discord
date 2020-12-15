@@ -6,9 +6,13 @@ internal class Markov {
 
     private val chain: Hashtable<String, Vector<String>> = Hashtable()
 
-    fun addPhrase(text: String) {
+    fun addPhrase(text: String, minWords: Int = 4) {
         println("Adding phrase: $text")
         val words = text.split(' ')
+        if (words.size < minWords) {
+            println("Phrase has less words than the minimum of $minWords")
+            return
+        }
 
         words.forEachIndexed { index, word ->
             when (index) {
@@ -21,27 +25,25 @@ internal class Markov {
                         suffix += words[index + 1]
                     }
                 }
-                words.size - 1 -> {
+                words.lastIndex -> {
                     val ends = chain.getOrPut("_end") { Vector() }
                     ends += word
                 }
                 else -> {
-                    if (index != words.lastIndex) {
-                        val suffix = chain.getOrPut(word) { Vector() }
-                        suffix += words[index + 1]
-                    }
+                    val suffix = chain.getOrPut(word) { Vector() }
+                    suffix += words[index + 1]
                 }
             }
         }
     }
 
-    fun generate(): String {
+    fun generate(): String? {
         val phrase = Vector<String>()
-        var word = chain["_start"]!!.random()
+        var word = (chain["_start"] ?: return null).random()
         phrase += word
 
-        while (word.isNotBlank() && word.last() != '.') {
-            word = chain[word]!!.random()
+        while (word.isNotBlank() && word.last() !in setOf('.', '?')) {
+            word = (chain[word] ?: return null).random()
             phrase += word
         }
 

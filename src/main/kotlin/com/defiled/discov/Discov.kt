@@ -22,16 +22,20 @@ internal object Discov {
             val channel = msg.channel.block() ?: return@subscribe
 
             val author = msg.authorAsMember.block() ?: return@subscribe
-            val authorMarkov = markovs.getOrPut(author.id) { Markov() }
-            authorMarkov.addPhrase(formatContent(msg.content))
+
+            if (!msg.content.startsWith("!markov")) {
+                val authorMarkov = markovs.getOrPut(author.id) { Markov() }
+                authorMarkov.addPhrase(formatContent(msg.content))
+            }
 
 //            val mention = msg.userMentions.single().block() ?: return@subscribe
 //            val mentionedMarkov = markovs.getOrPut(mention.id) { fetchMarkov(channel, msg, mention.id) }
 
             if (msg.content.startsWith("!markov") && author.id != gateway.selfId) {
-                val mention = msg.userMentions.singleOrEmpty().block() ?: return@subscribe
+                val mention = msg.userMentions.blockFirst() ?: return@subscribe
                 val mentionedMarkov = markovs[mention.id] ?: return@subscribe
-                channel.createMessage(mentionedMarkov.generate()).block()
+                val generated = mentionedMarkov.generate() ?: return@subscribe
+                channel.createMessage(generated).block()
             }
         }
 
@@ -51,7 +55,7 @@ internal object Discov {
 
     fun formatContent(content: String): String {
         val capitalized = content.capitalize()
-        return if (capitalized.endsWith(".")) capitalized else "$capitalized."
+        return if (capitalized.lastOrNull() in setOf('.', '?')) capitalized else "$capitalized."
     }
 
 }
