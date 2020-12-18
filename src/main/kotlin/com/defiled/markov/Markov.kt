@@ -1,10 +1,6 @@
 package com.defiled.markov
 
-import java.util.*
-
-internal class Markov {
-
-    private val chain: Hashtable<String, Vector<String>> = Hashtable()
+internal class Markov(private val chain: MutableMap<String, MutableList<String>> = mutableMapOf()) {
 
     fun addPhrase(text: String, minWords: Int = 4) {
         println("Adding phrase: $text")
@@ -17,20 +13,20 @@ internal class Markov {
         words.forEachIndexed { index, word ->
             when (index) {
                 0 -> {
-                    val starts = chain.getOrPut("_start") { Vector() }
+                    val starts = chain.getOrPut("_start") { mutableListOf() }
                     starts += word
 
                     if (index != words.lastIndex) {
-                        val suffix = chain.getOrPut(word) { Vector() }
+                        val suffix = chain.getOrPut(word) { mutableListOf() }
                         suffix += words[index + 1]
                     }
                 }
                 words.lastIndex -> {
-                    val ends = chain.getOrPut("_end") { Vector() }
+                    val ends = chain.getOrPut("_end") { mutableListOf() }
                     ends += word
                 }
                 else -> {
-                    val suffix = chain.getOrPut(word) { Vector() }
+                    val suffix = chain.getOrPut(word) { mutableListOf() }
                     suffix += words[index + 1]
                 }
             }
@@ -38,11 +34,11 @@ internal class Markov {
     }
 
     fun generate(): String? {
-        val phrase = Vector<String>()
+        val phrase = mutableListOf<String>()
         var word = (chain["_start"] ?: return null).random()
         phrase += word
 
-        while (word.isNotBlank() && word.last() !in setOf('.', '?')) {
+        while (word.isNotBlank() && word.last() !in setOf('.', '?', '!')) {
             word = (chain[word] ?: return null).random()
             phrase += word
         }

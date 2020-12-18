@@ -20,6 +20,7 @@ compileKotlin.kotlinOptions.jvmTarget = "1.8"
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation("com.google.code.gson:gson:2.8.6")
     implementation("com.discord4j:discord4j-core:3.1.3")
 }
 
