@@ -37,6 +37,12 @@ internal object Discov {
                 val generated = mentionedMarkov.generate() ?: return@subscribe
                 channel.createMessage(generated).block()
             }
+
+            if (msg.content.startsWith("!markov purge") && author.id != gateway.selfId) {
+                val mention = msg.userMentions.blockFirst() ?: return@subscribe
+                val mentionedMarkov = markovs[mention.id] ?: return@subscribe
+                mentionedMarkov.purgeChain() ?: return@subscribe
+            }
         }
 
         gateway.onDisconnect().block()

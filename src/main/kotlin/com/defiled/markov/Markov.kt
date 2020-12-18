@@ -37,6 +37,10 @@ internal class Markov {
         }
     }
 
+    fun purgeChain(): Void {
+        chain.clear();
+    }
+
     fun generate(): String? {
         val phrase = Vector<String>()
         var word = (chain["_start"] ?: return null).random()
