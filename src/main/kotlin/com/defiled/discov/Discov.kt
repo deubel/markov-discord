@@ -10,6 +10,7 @@ import discord4j.core.event.domain.message.MessageCreateEvent
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
@@ -23,6 +24,8 @@ internal object Discov {
     private val gson = GsonBuilder().setPrettyPrinting().registerTypeAdapter(Snowflake::class.java, SnowflakeTypeAdapter).enableComplexMapKeySerialization().create()
 
     private lateinit var markovs: MutableMap<Snowflake, Markov>
+
+    var lastSave = 0L
 
     fun initialize(gateway: GatewayDiscordClient) {
         markovs = if (storageFile.exists()) {
@@ -56,8 +59,11 @@ internal object Discov {
                 channel.createMessage(generated).block()
             }
 
-            val json = gson.toJson(markovs)
-            storageFile.writeBytes(gzip(json))
+            if (System.currentTimeMillis() - lastSave > TimeUnit.MINUTES.toMillis(15)) {
+                val json = gson.toJson(markovs)
+                storageFile.writeBytes(gzip(json))
+                lastSave = System.currentTimeMillis();
+            }
         }
 
         gateway.onDisconnect().block()
