@@ -7,7 +7,11 @@ import discord4j.common.util.Snowflake
 import discord4j.core.DiscordClient
 import discord4j.core.GatewayDiscordClient
 import discord4j.core.event.domain.message.MessageCreateEvent
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.charset.StandardCharsets.UTF_8
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 internal object Discov {
 
@@ -21,7 +25,12 @@ internal object Discov {
     private lateinit var markovs: MutableMap<Snowflake, Markov>
 
     fun initialize(gateway: GatewayDiscordClient) {
-        markovs = if (storageFile.exists()) gson.fromJson(storageFile.readText(), TypeToken.getParameterized(MutableMap::class.java, Snowflake::class.java, Markov::class.java).type) else mutableMapOf()
+        markovs = if (storageFile.exists()) {
+            val json = ungzip(storageFile.readBytes())
+            gson.fromJson(json, TypeToken.getParameterized(MutableMap::class.java, Snowflake::class.java, Markov::class.java).type)
+        } else {
+            mutableMapOf()
+        }
 
         gateway.on(MessageCreateEvent::class.java).subscribe { event ->
             val msg = event.message
@@ -47,7 +56,8 @@ internal object Discov {
                 channel.createMessage(generated).block()
             }
 
-            storageFile.writeText(gson.toJson(markovs))
+            val json = gson.toJson(markovs)
+            storageFile.writeBytes(gzip(json))
         }
 
         gateway.onDisconnect().block()
@@ -58,6 +68,14 @@ internal object Discov {
         return if (capitalized.lastOrNull() in setOf('.', '?', '!')) capitalized else "$capitalized."
     }
 
+    fun gzip(content: String): ByteArray {
+        val bos = ByteArrayOutputStream()
+        GZIPOutputStream(bos).bufferedWriter(UTF_8).use { it.write(content) }
+        return bos.toByteArray()
+    }
+
+    fun ungzip(content: ByteArray): String =
+        GZIPInputStream(content.inputStream()).bufferedReader(UTF_8).use { it.readText() }
 }
 
 fun main(args: Array<String>) {
