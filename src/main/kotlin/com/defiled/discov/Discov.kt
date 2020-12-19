@@ -20,7 +20,7 @@ internal object Discov {
     lateinit var client: DiscordClient
     lateinit var gateway: GatewayDiscordClient
 
-    private val gson = GsonBuilder().setPrettyPrinting().registerTypeAdapter(Snowflake::class.java, SnowflakeTypeAdapter).enableComplexMapKeySerialization().create()
+    private val gson = GsonBuilder().registerTypeAdapter(Snowflake::class.java, SnowflakeTypeAdapter).enableComplexMapKeySerialization().create()
 
     private lateinit var markovs: MutableMap<Snowflake, Markov>
 
