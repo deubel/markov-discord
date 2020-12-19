@@ -30,14 +30,19 @@ internal object Discov {
             val author = msg.authorAsMember.block() ?: return@subscribe
 
             if (!msg.content.startsWith("!markov")) {
-                val authorMarkov = markovs.getOrPut(author.id) { Markov() }
-                authorMarkov.addPhrase(formatContent(msg.content))
+                if (author.id != gateway.selfId) {
+                    val authorMarkov = markovs.getOrPut(author.id) { Markov() }
+                    val globalMarkov = markovs.getOrPut(gateway.selfId) { Markov() }
+                    val formatted = formatContent(msg.content)
+                    authorMarkov.addPhrase(formatted)
+                    globalMarkov.addPhrase(formatted)
+                }
             } else if (author.id != gateway.selfId) {
                 if (msg.content.startsWith("!markov purge")) {
                     markovs.remove(author.id)
                 }
-                val mention = msg.userMentions.blockFirst() ?: return@subscribe
-                val mentionedMarkov = markovs[mention.id] ?: return@subscribe
+                val mentionId = msg.userMentions.blockFirst()?.id ?: gateway.selfId ?: return@subscribe
+                val mentionedMarkov = markovs[mentionId] ?: return@subscribe
                 val generated = mentionedMarkov.generate() ?: return@subscribe
                 channel.createMessage(generated).block()
             }
