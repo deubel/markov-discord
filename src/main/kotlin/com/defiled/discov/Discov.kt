@@ -35,33 +35,37 @@ internal object Discov {
         }
 
         gateway.on(MessageCreateEvent::class.java).subscribe { event ->
-            val msg = event.message
-            val channel = msg.channel.block() ?: return@subscribe
+            try {
+                val msg = event.message
+                val channel = msg.channel.block() ?: return@subscribe
 
-            val author = msg.authorAsMember.block() ?: return@subscribe
+                val author = msg.authorAsMember.block() ?: return@subscribe
 
-            if (!msg.content.startsWith("!markov")) {
-                if (author.id != gateway.selfId) {
-                    val authorMarkov = markovs.getOrPut(author.id) { Markov() }
-                    val globalMarkov = markovs.getOrPut(gateway.selfId) { Markov() }
-                    val formatted = formatContent(msg.content)
-                    authorMarkov.addPhrase(formatted)
-                    globalMarkov.addPhrase(formatted)
+                if (!msg.content.startsWith("!markov")) {
+                    if (author.id != gateway.selfId) {
+                        val authorMarkov = markovs.getOrPut(author.id) { Markov() }
+                        val globalMarkov = markovs.getOrPut(gateway.selfId) { Markov() }
+                        val formatted = formatContent(msg.content)
+                        authorMarkov.addPhrase(formatted)
+                        globalMarkov.addPhrase(formatted)
 
-                    if (System.currentTimeMillis() - lastSave > TimeUnit.MINUTES.toMillis(15)) {
-                        val json = gson.toJson(markovs)
-                        storageFile.writeBytes(gzip(json))
-                        lastSave = System.currentTimeMillis()
+                        if (System.currentTimeMillis() - lastSave > TimeUnit.MINUTES.toMillis(15)) {
+                            val json = gson.toJson(markovs)
+                            storageFile.writeBytes(gzip(json))
+                            lastSave = System.currentTimeMillis()
+                        }
                     }
+                } else if (author.id != gateway.selfId) {
+                    if (msg.content.startsWith("!markov purge")) {
+                        markovs.remove(author.id)
+                    }
+                    val userId = msg.userMentions.blockFirst()?.id ?: gateway.selfId ?: return@subscribe
+                    val markov = markovs[userId] ?: return@subscribe
+                    val generated = markov.generate() ?: return@subscribe
+                    channel.createMessage(generated).block()
                 }
-            } else if (author.id != gateway.selfId) {
-                if (msg.content.startsWith("!markov purge")) {
-                    markovs.remove(author.id)
-                }
-                val userId = msg.userMentions.blockFirst()?.id ?: gateway.selfId ?: return@subscribe
-                val markov = markovs[userId] ?: return@subscribe
-                val generated = markov.generate() ?: return@subscribe
-                channel.createMessage(generated).block()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
