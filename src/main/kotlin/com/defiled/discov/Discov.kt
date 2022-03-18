@@ -59,7 +59,7 @@ internal object Discov {
                     if (msg.content.startsWith("!markov purge")) {
                         markovs.remove(author.id)
                     }
-                    val userId = msg.userMentions.blockFirst()?.id ?: gateway.selfId ?: return@subscribe
+                    val userId = msg.userMentions.firstOrNull()?.id ?: gateway.selfId ?: return@subscribe
                     val markov = markovs[userId] ?: return@subscribe
                     val generated = markov.generate() ?: return@subscribe
                     channel.createMessage(generated).block()
